@@ -16,12 +16,13 @@ st.set_page_config(
 
 # Sidebar
 st.sidebar.title("📊 Stock Analyzer")
-ticker = st.sidebar.text_input("Enter stock ticker:", "AAPL").upper()
-run_analysis = st.sidebar.button("Analyze")
+with st.sidebar.form(key="analyze_form"):
+    ticker = st.text_input("Enter stock ticker:", "AAPL").upper()
+    submit_button = st.form_submit_button(label="Analyze")
 
 color_map = {"BUY": "green", "HOLD": "orange", "NOT BUY": "red"}
 
-if run_analysis:
+if submit_button:
     st.title(f"Stock Analysis for {ticker}")
 
     f_decision, f_fundamentals, f_reasons, f_scores = get_fundamentals(ticker)
