@@ -53,9 +53,10 @@ def get_technicals(ticker: str):
 
     # Moving averages
     ## Using 50-day and 200-day SMAs to identify long-term trend
+    
     sma50 = close.rolling(50).mean().iloc[-1]
     sma200 = close.rolling(200).mean().iloc[-1]
-    techs["SMA50/200"] = (sma50, sma200)
+    techs["SMA50/200"] = f"({sma50:.2f}, {sma200:.2f})"
     if sma50 > sma200:
         reasons.append("50-day SMA > 200-day SMA (uptrend)")
         buy_score.append(1)
