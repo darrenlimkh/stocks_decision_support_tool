@@ -1,7 +1,7 @@
 import ta
 # import joblib
 import yfinance as yf
-import xgboost as xgb
+# import xgboost as xgb
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -70,15 +70,15 @@ def train_model_cv(ticker, lookahead_days=5, n_splits=5, model_type="logistic", 
             ("scaler", StandardScaler()),
             ("clf", LogisticRegression(max_iter=500))
         ])
-    elif model_type == "xgboost":
-        model = xgb.XGBClassifier(
-            n_estimators=200,
-            max_depth=4,
-            learning_rate=0.05,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            eval_metric="logloss",
-        )
+    # elif model_type == "xgboost":
+        # model = xgb.XGBClassifier(
+        #     n_estimators=200,
+        #     max_depth=4,
+        #     learning_rate=0.05,
+        #     subsample=0.8,
+        #     colsample_bytree=0.8,
+        #     eval_metric="logloss",
+        # )
     else:
         raise ValueError("model_type must be 'logistic' or 'xgboost'")
     
