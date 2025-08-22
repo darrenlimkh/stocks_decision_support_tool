@@ -15,7 +15,7 @@ def get_fundamentals(ticker: str):
     sector_benchmarks = get_sector_benchmarks(sector)
 
     fundamentals = {}
-    decision = "NOT BUY"
+    decision = "DON'T BUY"
     reasons = []
     buy_score = []
 
@@ -272,6 +272,6 @@ def get_fundamentals(ticker: str):
     elif fundamentals_score == 1:
         decision = "HOLD"
     else:
-        decision = "NOT BUY"
+        decision = "DON'T BUY"
     
     return decision, fundamentals, reasons, buy_score

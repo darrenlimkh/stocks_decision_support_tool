@@ -7,6 +7,8 @@ import ta
 from metrics.fundamentals import get_fundamentals
 from metrics.technicals import get_technicals
 
+from machine_learning.predict import train_model_cv, get_prediction
+
 # Page Setup
 st.set_page_config(
     page_title="Stocks Decision Support Tool",
@@ -20,10 +22,15 @@ with st.sidebar.form(key="analyze_form"):
     ticker = st.text_input("Enter stock ticker:", "AAPL").upper()
     submit_button = st.form_submit_button(label="Analyze")
 
-color_map = {"BUY": "green", "HOLD": "orange", "NOT BUY": "red"}
+color_map = {"BUY": "green", "HOLD": "orange", "DON'T BUY": "red"}
 
 if submit_button:
     st.title(f"Stock Analysis for {ticker}")
+
+    
+    # Convert features to dataframe for display (optional)
+    # ml_data = [[k, v] for k, v in ml_features.items()]
+    # ml_df = pd.DataFrame(ml_data, columns=['Metric', 'Value'])
 
     f_decision, f_fundamentals, f_reasons, f_scores = get_fundamentals(ticker)
     f_data = [[k, v, f_reasons[i], f_scores[i]] for i, (k, v) in enumerate(f_fundamentals.items())]
@@ -34,6 +41,7 @@ if submit_button:
     t_data = [[k, v, t_reasons[i], t_scores[i]] for i, (k, v) in enumerate(t_technicals.items())]
     t_df = pd.DataFrame(t_data, columns=['Metric', 'Value', 'Interpretation', 'Buy Signal'])
     t_df["Buy Signal"] = pd.to_numeric(t_df["Buy Signal"], errors="coerce")
+    t_ml_decision, t_ml_features, t_prob = get_prediction(ticker, model_type="logistic")
 
     tab1, tab2, tab3 = st.tabs(["Fundamentals", "Technicals", "Price Chart"])
 
@@ -46,7 +54,7 @@ if submit_button:
 
     with tab2:
         st.subheader("🔹 Technical Analysis")
-        st.markdown(f"**Decision:** <span style='color:{color_map[t_decision]}'>{t_decision}</span>", unsafe_allow_html=True)
+        st.markdown(f"**Decision:** <span style='color:{color_map[t_ml_decision]}'>{t_ml_decision} ({t_prob*100:.1f}% probability)</span>", unsafe_allow_html=True)
         st.dataframe(t_df, use_container_width=True)
         with st.expander("View detailed reasons"):
             st.write(t_reasons)
