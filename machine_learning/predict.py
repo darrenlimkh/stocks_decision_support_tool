@@ -1,16 +1,15 @@
-import yfinance as yf
 import ta
+import joblib
+import yfinance as yf
+import xgboost as xgb
 import pandas as pd
-from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import accuracy_score, classification_report
-import joblib
-
-import xgboost as xgb
 
 def build_training_data(ticker: str, lookahead_days: int = 5):
     end = datetime.today()
