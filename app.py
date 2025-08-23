@@ -41,7 +41,22 @@ with st.sidebar.form(key="analyze_form"):
 
     submit_button = st.form_submit_button(label="Analyze")
 
-color_map = {"BUY": "green", "HOLD": "orange", "DON'T BUY": "red"}
+color_map = {
+    "BUY": "green", 
+    "HOLD": "orange", 
+    "DON'T BUY": "red"
+}
+
+icon_map = {
+    "BUY": "🟢",
+    "DON'T BUY": "🔴"
+}
+
+bg_color_map = {
+    "BUY": "#e6ffe6",   # light green
+    "DON'T BUY": "#ffe6e6",  # light red
+    # "HOLD": "#fff5e6"   # light orange/yellow
+}
 
 if submit_button:
     if ticker and not valid:
@@ -79,13 +94,27 @@ if submit_button:
 
     with tab2:
         st.subheader("Technical Analysis")
-        
-        st.markdown(f"**Decision:** "
-                    f"<span style='color:{color_map[t_ml_decision]}'>{t_ml_decision}</span> "
-                    f"<span style='color:{color_map[t_ml_decision]}'> ({t_prob*100:.1f}% Gain Potential) </span>", 
-                    unsafe_allow_html=True
+
+        st.markdown(
+            f"""
+            <div style='
+                background-color:{bg_color_map[t_ml_decision]};
+                padding: 1.5rem;
+                border-radius: 12px;
+                text-align: center;
+                font-size: 1.4rem;
+                font-weight: bold;
+                box-shadow: 0px 3px 7px rgba(0,0,0,0.1);
+                margin-bottom: 25px;
+            '>
+                <span style='color:#000000;'>Recommended Decision:</span> 
+                <span style='color:{color_map[t_ml_decision]};'>{icon_map[t_ml_decision]} {t_ml_decision}</span> 
+                <span style='color:{color_map[t_ml_decision]};'>({t_prob*100:.1f}% Gain Potential)</span>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-        #
+
         st.dataframe(t_df, use_container_width=True)
         with st.expander("View Buy Signal Benchmarks"):
             for t_benchmark in t_benchmarks:
