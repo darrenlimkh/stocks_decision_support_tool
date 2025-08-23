@@ -92,18 +92,30 @@ if submit_button:
 
     with tab3:
         st.subheader("Price & Indicators")
-        stock_data = yf.download(ticker, period="1y", progress=False, auto_adjust=True)
-        stock_data_close = stock_data['Close'][ticker]
-        if not stock_data_close.empty:
+        stock_data_3y = yf.download(ticker, period="3y", progress=False, auto_adjust=True)
+        stock_data_1y = yf.download(ticker, period="1y", progress=False, auto_adjust=True)
+        stock_data_close_3y = stock_data_3y['Close'][ticker]
+        stock_data_close_1y = stock_data_1y['Close'][ticker]
+        
+        sma50_series = stock_data_close_3y.rolling(50).mean()
+        sma200_series = stock_data_close_3y.rolling(200).mean()
+        
+        sma_df = pd.concat([sma50_series, sma200_series], axis=1)
+        sma_df.columns = ["sma50", "sma200"]
+
+        sma_df = sma_df.dropna().tail(365)
+        sma_df = sma_df.loc[stock_data_1y.index.intersection(sma_df.index)]
+
+        if not stock_data_close_1y.empty:
             fig1 = go.Figure()
-            fig1.add_trace(go.Scatter(x=stock_data.index, y=stock_data_close, mode='lines', name='Close'))
-            fig1.add_trace(go.Scatter(x=stock_data.index, y=stock_data_close.rolling(50).mean(), mode='lines', name='SMA50'))
-            fig1.add_trace(go.Scatter(x=stock_data.index, y=stock_data_close.rolling(200).mean(), mode='lines', name='SMA200'))
+            fig1.add_trace(go.Scatter(x=stock_data_1y.index, y=stock_data_close_1y, mode='lines', name='Close'))
+            fig1.add_trace(go.Scatter(x=sma_df.index, y=sma_df['sma50'], mode='lines', name='SMA50'))
+            fig1.add_trace(go.Scatter(x=sma_df.index, y=sma_df['sma200'], mode='lines', name='SMA200'))
             fig1.update_layout(title=f"{ticker} Price Chart with SMA50 & SMA200", xaxis_title="Date", yaxis_title="Price (USD)")
             st.plotly_chart(fig1, use_container_width=True)
 
             fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=stock_data.index, y=ta.momentum.RSIIndicator(stock_data_close).rsi(), mode='lines', name='RSI'))
+            fig2.add_trace(go.Scatter(x=stock_data_1y.index, y=ta.momentum.RSIIndicator(stock_data_close_1y).rsi(), mode='lines', name='RSI'))
             fig2.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought 70", annotation_position="top left")
             fig2.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold 30", annotation_position="top left")
             fig2.update_layout(title="RSI Indicator", xaxis_title="Date", yaxis_title="RSI")
