@@ -7,8 +7,16 @@ import ta
 from metrics.fundamentals import get_fundamentals
 from metrics.technicals import get_technicals
 
-from machine_learning.predict import train_model_cv, get_prediction
+from machine_learning.predict import get_prediction
 
+@st.cache_data(show_spinner=False)
+def is_valid_ticker(ticker):
+    try:
+        data = yf.Ticker(ticker).history(period="1d", auto_adjust=True)
+        return not data.empty
+    except:
+        return False
+    
 # Page Setup
 st.set_page_config(
     page_title="Stocks Decision Support Tool",
@@ -19,15 +27,28 @@ st.set_page_config(
 # Sidebar
 st.sidebar.title("📊 Stock Analyzer")
 with st.sidebar.form(key="analyze_form"):
-    ticker = st.text_input("Enter stock ticker:", "AAPL").upper()
+    ticker = st.text_input("Enter Ticker:", "AAPL").upper()
+    valid = is_valid_ticker(ticker) if ticker else False
+        
+    holding_period = st.number_input(
+        "Enter Holding Period (Days):",
+        min_value=1,
+        max_value=365,
+        value=30,
+        step=1
+    )
+
     submit_button = st.form_submit_button(label="Analyze")
 
 color_map = {"BUY": "green", "HOLD": "orange", "DON'T BUY": "red"}
 
 if submit_button:
+    if ticker and not valid:
+        st.error(f"Error: {ticker} is invalid. Please enter a valid symbol.")
+        st.stop()
+    # st.success(f"Analyzing {ticker} for {holding_period} days!")
     st.title(f"Stock Analysis for {ticker}")
 
-    
     # Convert features to dataframe for display (optional)
     # ml_data = [[k, v] for k, v in ml_features.items()]
     # ml_df = pd.DataFrame(ml_data, columns=['Metric', 'Value'])
@@ -37,30 +58,40 @@ if submit_button:
     f_df = pd.DataFrame(f_data, columns=['Metric', 'Value', 'Interpretation', 'Buy Signal'])
     f_df["Buy Signal"] = pd.to_numeric(f_df["Buy Signal"], errors="coerce")
 
-    t_decision, t_technicals, t_reasons, t_scores = get_technicals(ticker)
+    t_technicals, t_benchmarks, t_reasons, t_scores = get_technicals(ticker)
     t_data = [[k, v, t_reasons[i], t_scores[i]] for i, (k, v) in enumerate(t_technicals.items())]
     t_df = pd.DataFrame(t_data, columns=['Metric', 'Value', 'Interpretation', 'Buy Signal'])
     t_df["Buy Signal"] = pd.to_numeric(t_df["Buy Signal"], errors="coerce")
-    t_ml_decision, t_ml_features, t_prob = get_prediction(ticker, model_type="logistic")
+    t_ml_decision, t_ml_features, t_prob = get_prediction(ticker, lookadhead_days=holding_period, model_type='logistic')
+
+    decision_color = "green" if t_ml_decision.lower() == "buy" else "red"
+    prob_color = "green" if t_prob > 0 else "red"
 
     tab1, tab2, tab3 = st.tabs(["Fundamentals", "Technicals", "Price Chart"])
 
     with tab1:
-        st.subheader("🔹 Fundamental Analysis")
+        st.subheader("Fundamental Analysis")
         st.markdown(f"**Decision:** <span style='color:{color_map[f_decision]}'>{f_decision}</span>", unsafe_allow_html=True)
         st.dataframe(f_df, use_container_width=True)
         with st.expander("View detailed reasons"):
             st.write(f_reasons)
 
     with tab2:
-        st.subheader("🔹 Technical Analysis")
-        st.markdown(f"**Decision:** <span style='color:{color_map[t_ml_decision]}'>{t_ml_decision} ({t_prob*100:.1f}% probability)</span>", unsafe_allow_html=True)
+        st.subheader("Technical Analysis")
+        
+        st.markdown(f"**Decision:** "
+                    f"<span style='color:{color_map[t_ml_decision]}'>{t_ml_decision}</span> "
+                    f"<span style='color:{color_map[t_ml_decision]}'> ({t_prob*100:.1f}% Gain Potential) </span>", 
+                    unsafe_allow_html=True
+        )
+
         st.dataframe(t_df, use_container_width=True)
-        with st.expander("View detailed reasons"):
-            st.write(t_reasons)
+        with st.expander("View Buy Signal Benchmarks"):
+            for t_benchmark in t_benchmarks:
+                st.markdown(f"• {t_benchmark}")
 
     with tab3:
-        st.subheader("📈 Price & Indicators")
+        st.subheader("Price & Indicators")
         stock_data = yf.download(ticker, period="1y", progress=False, auto_adjust=True)
         stock_data_close = stock_data['Close'][ticker]
         if not stock_data_close.empty:

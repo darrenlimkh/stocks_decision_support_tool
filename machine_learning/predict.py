@@ -40,14 +40,14 @@ def build_training_data(ticker: str, lookahead_days: int = 5):
     sma200 = close.rolling(200).mean()
     features["SMA50_gt_SMA200"] = (sma50 > sma200).astype(int)
 
-    high20 = close.rolling(20).max()
-    features["BreakoutUp"] = (close > high20).astype(int)
+    high30 = close.rolling(30).max()
+    features["BreakoutUp"] = (close > high30).astype(int)
 
-    low20 = close.rolling(20).min()
-    features["BreakoutDown"] = (close < low20).astype(int)
+    low30 = close.rolling(30).min()
+    features["BreakoutDown"] = (close < low30).astype(int)
 
-    avg_vol = volume.rolling(20).mean()
-    std_vol = volume.rolling(20).std()
+    avg_vol = volume.rolling(30).mean()
+    std_vol = volume.rolling(30).std()
     features["HighVolume"] = (volume > avg_vol + 2 * std_vol).astype(int)
 
     # Target
@@ -113,10 +113,10 @@ def train_model_cv(ticker, lookahead_days=5, n_splits=5, model_type="logistic", 
 
     return model, X.columns
 
-def get_prediction(ticker: str, model_type, model_path=None):
+def get_prediction(ticker: str, lookadhead_days: int, model_type: str, model_path=None):
     # model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
     # Load trained model
-    if model_path and model_type:
+    if model_path:
         try:
             model_path = f"{model_type}_{ticker}_model.pkl"
             model, feature_names = joblib.load(model_path)
@@ -124,7 +124,7 @@ def get_prediction(ticker: str, model_type, model_path=None):
             raise FileNotFoundError(f"Model file {model_path} not found. Please train the model first.")
 
     else:
-        model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
+        model, feature_names = train_model_cv(ticker, lookahead_days=lookadhead_days, model_type="logistic")
 
     # Fetch latest data
     end = datetime.today()
@@ -150,15 +150,15 @@ def get_prediction(ticker: str, model_type, model_path=None):
     features["SMA50_gt_SMA200"] = int(sma50 > sma200)
 
     last_price = close.iloc[-1]
-    high20 = close.rolling(20).max().iloc[-1]
-    features["BreakoutUp"] = int(last_price > high20)
+    high30 = close.rolling(30).max().iloc[-1]
+    features["BreakoutUp"] = int(last_price > high30)
 
-    low20 = close.rolling(20).min().iloc[-1]
-    features["BreakoutDown"] = int(last_price < low20)
+    low30 = close.rolling(30).min().iloc[-1]
+    features["BreakoutDown"] = int(last_price < low30)
 
     last_vol = volume.iloc[-1]
-    avg_vol = volume.rolling(20).mean().iloc[-1]
-    std_vol = volume.rolling(20).std().iloc[-1]
+    avg_vol = volume.rolling(30).mean().iloc[-1]
+    std_vol = volume.rolling(30).std().iloc[-1]
     features["HighVolume"] = int(last_vol > avg_vol + 2 * std_vol)
 
     # Convert to DataFrame in correct column order

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 def get_technicals(ticker: str):
     end = datetime.today()
     start = end - timedelta(days=365)
-    df = yf.download(ticker, start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"), progress=False)
+    df = yf.download(ticker, start=start.strftime("%Y-%m-%d"), end=end.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)
 
     if df.empty:
         return {}, "NOT NOW", ["No price data available"]
@@ -18,39 +18,47 @@ def get_technicals(ticker: str):
 
     techs = {}
     reasons = []
+    benchmarks = []
     buy_score = []
-    technical_score = 0
+    # technical_score = 0
 
     # RSI
-    # Using RSI to identify overbought/oversold conditions
+    # Using RSI to identify overbought/overs old conditions
     rsi = ta.momentum.RSIIndicator(close).rsi().iloc[-1]
-    techs["RSI"] = int(rsi)
+    techs["RSI"] = f"{rsi:.2f}"
     if rsi < 30:
-        reasons.append(f"RSI ({rsi:.2f}) < 30 (oversold, buy signal)")   
+        benchmarks.append("RSI < 30")
+        reasons.append(f"Oversold, Buy Opportunity")   
         buy_score.append(1)
-        technical_score += 1
+        # technical_score += 1
     elif 30 <= rsi <= 70:
-        reasons.append(f"RSI ({rsi:.2f}) between 30 and 70 (neutral)")
+        benchmarks.append("30 ≤ RSI ≤ 70")
+        reasons.append(f"Neutral")
         buy_score.append(0)
-        technical_score += 0
+        # technical_score += 0
     elif rsi > 70:
-        reasons.append(f"RSI ({rsi:.2f}) > 70 (overbought, avoid buying)")
+        benchmarks.append("RSI > 70")
+        reasons.append(f"Overbought, Avoid Buying")
         buy_score.append(-1)
-        technical_score -= 1
+        # technical_score -= 1
 
     # MACD
     ## Using MACD to identify trend direction
     macd = ta.trend.MACD(close)
-    macd_diff = np.round(macd.macd_diff().iloc[-1], 2)
-    techs["MACD Difference"] = macd_diff
+    macd_signal = macd.macd_signal().iloc[-1]
+    macd_line = macd.macd().iloc[-1], 2
+    macd_diff = macd.macd_diff().iloc[-1]
+    techs["MACD Line / Signal / Difference"] = f"{macd_signal:.2f} / {macd_line[0]:.2f} / {macd_diff:.2f}"
     if macd_diff > 0:
-        reasons.append("MACD > Signal (bullish)")
+        benchmarks.append("MACD > Signal")
+        reasons.append("Bullish Momentum")
         buy_score.append(1)
-        technical_score += 1
+        # technical_score += 1
     else:
-        reasons.append("MACD <= Signal (bearish)")
+        benchmarks.append("MACD ≤ Signal")
+        reasons.append("Bearish Momentum")
         buy_score.append(-1)
-        technical_score -= 1
+        # technical_score -= 1
 
     # Moving averages
     ## Using 50-day and 200-day SMAs to identify long-term trend
@@ -58,51 +66,58 @@ def get_technicals(ticker: str):
     sma200 = close.rolling(200).mean().iloc[-1]
     techs["SMA50 / SMA200"] = f"{sma50:.2f} / {sma200:.2f}"
     if sma50 > sma200:
-        reasons.append("50-day SMA > 200-day SMA (uptrend)")
+        benchmarks.append("SMA50 > SMA200")
+        reasons.append("Bullish Trend")
         buy_score.append(1)
-        technical_score += 1
+        # technical_score += 1
     else:
-        reasons.append("50-day SMA <= 200-day SMA (downtrend)")
+        benchmarks.append("SMA50 ≤ SMA200")
+        reasons.append("Bearish Trend")
         buy_score.append(-1)
-        technical_score -= 1
+        # technical_score -= 1
 
     # Breakout
-    ## Using 20-day high/low to identify breakout conditions
+    ## Using 30-day high/low to identify breakout conditions
     last_price = close.iloc[-1]
-    high20 = close.rolling(30).max().iloc[-1]
-    low20 = close.rolling(30).min().iloc[-1]
-    techs["Last Price"] = np.round(last_price,2)
-    if last_price > high20:
-        reasons.append("Price broke above 30-day high (bullish breakout)")
+    high30 = close.rolling(30).max().iloc[-1]
+    low30 = close.rolling(30).min().iloc[-1]
+    techs["Last Price / 30-day High / 30-day Low"] = f"{last_price:.2f} / {high30:.2f} / {low30:.2f}"
+    if last_price > high30:
+        benchmarks.append("Last Price > 30-day High")
+        reasons.append("Bullish Breakout")
         buy_score.append(1)
-        technical_score += 1
-    elif last_price < low20:
-        reasons.append("Price broke below 30-day low (bearish)")
+        # technical_score += 1
+    elif last_price < low30:
+        benchmarks.append("Last Price < 30-day Low")
+        reasons.append("Bearish Breakdown")
         buy_score.append(-1)
-        technical_score -= 1
+        # technical_score -= 1
     else:
-        reasons.append("Price within 30-day range (no breakout)")
+        benchmarks.append("Last Price within 30-day Range")
+        reasons.append("Neutral")
         buy_score.append(0)
-        technical_score += 0
+        # technical_score += 0
 
     # Volume
-    ## Using 20-day average volume to confirm price moves
+    ## Using 30-day average volume to confirm price moves
     avg_vol = volume.rolling(30).mean().iloc[-1]
     std_vol = volume.rolling(30).std().iloc[-1]  
-
     last_vol = volume.iloc[-1]
     techs["Last Volume"] = f"{last_vol:,}"
     if last_vol > avg_vol + 2 * std_vol:
-        reasons.append("High volume confirms move")
+        benchmarks.append("Last Volume > (30-day Average + 2 · 30-day Std Dev)")
+        reasons.append("High Trading Volume")
         buy_score.append(1)
-        technical_score += 1
-    else:
-        reasons.append("Not high volume, no confirmation to move")
+        # technical_score += 1
+    elif last_vol < avg_vol - 2 * std_vol:
+        benchmarks.append("Last Volume < (30-day Average - 2 · 30-day Std Dev)")
+        reasons.append("Low Trading Volume, Avoid Buying")
         buy_score.append(-1)
-        technical_score += -1
+        # technical_score -= 1
+    else:
+        benchmarks.append("Last Volume within 95% Confidence Interval of 30-day Average")
+        reasons.append("Normal Volume")
+        buy_score.append(0)
 
-    decision = "NOT BUY"
-    if technical_score > 0:
-        decision = "BUY"
 
-    return decision, techs, reasons, buy_score
+    return techs, benchmarks, reasons, buy_score
