@@ -35,7 +35,8 @@ with st.sidebar.form(key="analyze_form"):
         min_value=1,
         max_value=365,
         value=30,
-        step=1
+        step=1,
+        help="Holding duration in days, which is used to estimate probability of upside."
     )
 
     submit_button = st.form_submit_button(label="Analyze")
