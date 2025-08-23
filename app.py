@@ -84,7 +84,7 @@ if submit_button:
                     f"<span style='color:{color_map[t_ml_decision]}'> ({t_prob*100:.1f}% Gain Potential) </span>", 
                     unsafe_allow_html=True
         )
-
+        #
         st.dataframe(t_df, use_container_width=True)
         with st.expander("View Buy Signal Benchmarks"):
             for t_benchmark in t_benchmarks:
