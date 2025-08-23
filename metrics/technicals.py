@@ -1,4 +1,5 @@
 import yfinance as yf
+import numpy as np
 import ta
 
 from datetime import datetime, timedelta
@@ -23,7 +24,7 @@ def get_technicals(ticker: str):
     # RSI
     # Using RSI to identify overbought/oversold conditions
     rsi = ta.momentum.RSIIndicator(close).rsi().iloc[-1]
-    techs["RSI"] = rsi
+    techs["RSI"] = int(rsi)
     if rsi < 30:
         reasons.append(f"RSI ({rsi:.2f}) < 30 (oversold, buy signal)")   
         buy_score.append(1)
@@ -40,8 +41,8 @@ def get_technicals(ticker: str):
     # MACD
     ## Using MACD to identify trend direction
     macd = ta.trend.MACD(close)
-    macd_diff = macd.macd_diff().iloc[-1]
-    techs["MACD_diff"] = macd_diff
+    macd_diff = np.round(macd.macd_diff().iloc[-1], 2)
+    techs["MACD Difference"] = macd_diff
     if macd_diff > 0:
         reasons.append("MACD > Signal (bullish)")
         buy_score.append(1)
@@ -53,10 +54,9 @@ def get_technicals(ticker: str):
 
     # Moving averages
     ## Using 50-day and 200-day SMAs to identify long-term trend
-    
     sma50 = close.rolling(50).mean().iloc[-1]
     sma200 = close.rolling(200).mean().iloc[-1]
-    techs["SMA50/200"] = f"({sma50:.2f}, {sma200:.2f})"
+    techs["SMA50 / SMA200"] = f"{sma50:.2f} / {sma200:.2f}"
     if sma50 > sma200:
         reasons.append("50-day SMA > 200-day SMA (uptrend)")
         buy_score.append(1)
@@ -69,29 +69,29 @@ def get_technicals(ticker: str):
     # Breakout
     ## Using 20-day high/low to identify breakout conditions
     last_price = close.iloc[-1]
-    high20 = close.rolling(20).max().iloc[-1]
-    low20 = close.rolling(20).min().iloc[-1]
-    techs["LastPrice"] = last_price
+    high20 = close.rolling(30).max().iloc[-1]
+    low20 = close.rolling(30).min().iloc[-1]
+    techs["Last Price"] = np.round(last_price,2)
     if last_price > high20:
-        reasons.append("Price broke above 20-day high (bullish breakout)")
+        reasons.append("Price broke above 30-day high (bullish breakout)")
         buy_score.append(1)
         technical_score += 1
     elif last_price < low20:
-        reasons.append("Price broke below 20-day low (bearish)")
+        reasons.append("Price broke below 30-day low (bearish)")
         buy_score.append(-1)
         technical_score -= 1
     else:
-        reasons.append("Price within 20-day range (no breakout)")
+        reasons.append("Price within 30-day range (no breakout)")
         buy_score.append(0)
         technical_score += 0
 
     # Volume
     ## Using 20-day average volume to confirm price moves
-    avg_vol = volume.rolling(20).mean().iloc[-1]
-    std_vol = volume.rolling(20).std().iloc[-1]  
+    avg_vol = volume.rolling(30).mean().iloc[-1]
+    std_vol = volume.rolling(30).std().iloc[-1]  
 
     last_vol = volume.iloc[-1]
-    techs["LastVolume"] = last_vol
+    techs["Last Volume"] = f"{last_vol:,}"
     if last_vol > avg_vol + 2 * std_vol:
         reasons.append("High volume confirms move")
         buy_score.append(1)
