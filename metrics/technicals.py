@@ -50,12 +50,12 @@ def get_technicals(ticker: str):
     macd_diff = macd.macd_diff().iloc[-1]
     techs["MACD Line / Signal / Difference"] = f"{macd_signal:.2f} / {macd_line[0]:.2f} / {macd_diff:.2f}"
     if macd_diff > 0:
-        benchmarks.append("MACD > Signal")
+        benchmarks.append("MACD Line > Signal")
         reasons.append("Bullish Momentum")
         buy_score.append(1)
         # technical_score += 1
     else:
-        benchmarks.append("MACD ≤ Signal")
+        benchmarks.append("MACD Line ≤ Signal")
         reasons.append("Bearish Momentum")
         buy_score.append(-1)
         # technical_score -= 1
