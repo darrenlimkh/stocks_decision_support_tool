@@ -1,7 +1,7 @@
 import ta
-# import joblib
+import joblib
 import yfinance as yf
-# import xgboost as xgb
+import xgboost as xgb
 import pandas as pd
 
 from datetime import datetime, timedelta
@@ -70,15 +70,15 @@ def train_model_cv(ticker, lookahead_days=5, n_splits=5, model_type="logistic", 
             ("scaler", StandardScaler()),
             ("clf", LogisticRegression(max_iter=500))
         ])
-    # elif model_type == "xgboost":
-        # model = xgb.XGBClassifier(
-        #     n_estimators=200,
-        #     max_depth=4,
-        #     learning_rate=0.05,
-        #     subsample=0.8,
-        #     colsample_bytree=0.8,
-        #     eval_metric="logloss",
-        # )
+    elif model_type == "xgboost":
+        model = xgb.XGBClassifier(
+            n_estimators=200,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            eval_metric="logloss",
+        )
     else:
         raise ValueError("model_type must be 'logistic' or 'xgboost'")
     
@@ -109,22 +109,22 @@ def train_model_cv(ticker, lookahead_days=5, n_splits=5, model_type="logistic", 
         print(f"Average Accuracy across folds: {avg_acc:.4f}")
 
     model.fit(X, y)
-    # joblib.dump((model, list(X.columns)), f"./machine_learning/models/{model_type}_{ticker}_model.pkl")
+    joblib.dump((model, list(X.columns)), f"./machine_learning/models/{model_type}_{ticker}_model.pkl")
 
     return model, X.columns
 
 def get_prediction(ticker: str, model_type, model_path=None):
-    model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
+    # model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
     # Load trained model
-    # if model_path and model_type:
-    #     try:
-    #         model_path = f"{model_type}_{ticker}_model.pkl"
-    #         model, feature_names = joblib.load(model_path)
-    #     except FileNotFoundError:
-    #         raise FileNotFoundError(f"Model file {model_path} not found. Please train the model first.")
+    if model_path and model_type:
+        try:
+            model_path = f"{model_type}_{ticker}_model.pkl"
+            model, feature_names = joblib.load(model_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Model file {model_path} not found. Please train the model first.")
 
-    # else:
-    #     model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
+    else:
+        model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
 
     # Fetch latest data
     end = datetime.today()
