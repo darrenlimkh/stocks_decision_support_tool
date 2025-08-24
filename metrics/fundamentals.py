@@ -22,7 +22,7 @@ def get_fundamentals(ticker: str):
     '''Valuation'''
     # --- PEG ratio ---
     ## Used to assess growth relative to P/E.
-    peg = info.get("trailingPegRatio")
+    peg = info.get("trailingPegRatio", None)
     if peg is not None:
         fundamentals["PEG"] = f"{peg:.2f}"
         if peg < 1:
