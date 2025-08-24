@@ -116,7 +116,7 @@ def train_model_cv(ticker, lookahead_days=5, n_splits=5, model_type="logistic", 
 
     return model, X.columns
 
-def get_prediction(ticker: str, lookadhead_days: int, model_type: str, model_path=None):
+def get_technicals_prediction(ticker: str, lookahead_days: int, model_type: str, model_path=None):
     # model, feature_names = train_model_cv(ticker, lookahead_days=10, model_type="logistic")
     # Load trained model
     if model_path:
@@ -127,7 +127,7 @@ def get_prediction(ticker: str, lookadhead_days: int, model_type: str, model_pat
             raise FileNotFoundError(f"Model file {model_path} not found. Please train the model first.")
 
     else:
-        model, feature_names = train_model_cv(ticker, lookahead_days=lookadhead_days, model_type="logistic")
+        model, feature_names = train_model_cv(ticker, lookahead_days=lookahead_days, model_type="logistic")
 
     # Fetch latest data
     end = datetime.today()
@@ -171,4 +171,4 @@ def get_prediction(ticker: str, lookadhead_days: int, model_type: str, model_pat
     prob = model.predict_proba(X_live)[0, 1]  # probability of "up"
     decision = "BUY" if prob > 0.5 else "DON'T BUY"
 
-    return decision, features, prob
+    return decision, prob
