@@ -79,7 +79,6 @@ def get_fundamentals(ticker: str):
                 benchmarks.append("P/B ≥ 1")
                 reasons.append("Fairly valued or overvalued")
                 buy_score.append(-1)
-                # valuation_score -= 1
         else:
             pb = None
             fundamentals["P/B"] = None
