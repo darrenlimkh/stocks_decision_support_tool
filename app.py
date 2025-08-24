@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import yfinance as yf
 import ta
+import math
 
 from metrics.fundamentals import get_fundamentals
 from metrics.technicals import get_technicals
@@ -41,17 +42,20 @@ with st.sidebar.form(key="analyze_form"):
 
 color_map = {
     "BUY": "green", 
-    "DON'T BUY": "red"
+    "DON'T BUY": "red",
+    "UNABLE TO SUPPORT A DECISION": "black"
 }
 
 icon_map = {
     "BUY": "🟢",
-    "DON'T BUY": "🔴"
+    "DON'T BUY": "🔴",
+    "UNABLE TO SUPPORT A DECISION": ""
 }
 
 bg_color_map = {
     "BUY": "#e6ffe6",   # light green
     "DON'T BUY": "#ffe6e6",  # light red
+    "UNABLE TO SUPPORT A DECISION": "white"
 }
 
 
@@ -93,7 +97,7 @@ if st.session_state.analyzed:
 
     with tab1:
         st.subheader("Fundamental Analysis")
-        
+        prob_span = f"<span style='color:{color_map[f_ml_decision]};'>({f_prob*100:.1f}% Gain Potential)</span>" if f_prob is not None and not math.isnan(f_prob) else ""
         st.markdown(
             f"""
             <div style='
@@ -106,9 +110,8 @@ if st.session_state.analyzed:
                 box-shadow: 0px 3px 7px rgba(0,0,0,0.1);
                 margin-bottom: 25px;
             '>
-                <span style='color:#000000;'>Recommended Decision:</span> 
                 <span style='color:{color_map[f_ml_decision]};'>{icon_map[f_ml_decision]} {f_ml_decision}</span> 
-                <span style='color:{color_map[f_ml_decision]};'>({f_prob*100:.1f}% Gain Potential)</span>
+                {prob_span}
             </div>
             """.replace("{", "{{").replace("}", "}}").replace("{{bg_color_map", "{bg_color_map").replace("{{color_map", "{color_map").replace("{{icon_map", "{icon_map").replace("{{f_ml_decision", "{f_ml_decision").replace("{{f_prob", "{f_prob"),
             unsafe_allow_html=True
@@ -160,7 +163,6 @@ if st.session_state.analyzed:
                 box-shadow: 0px 3px 7px rgba(0,0,0,0.1);
                 margin-bottom: 25px;
             '>
-                <span style='color:#000000;'>Recommended Decision:</span> 
                 <span style='color:{color_map[t_ml_decision]};'>{icon_map[t_ml_decision]} {t_ml_decision}</span> 
                 <span style='color:{color_map[t_ml_decision]};'>({t_prob*100:.1f}% Gain Potential)</span>
             </div>

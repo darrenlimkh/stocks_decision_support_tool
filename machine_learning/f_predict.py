@@ -23,6 +23,9 @@ def get_fundamentals(ticker, get_train, lookahead_days=90):
 
     df_raw = pd.concat([inc, bal, cf], axis=1)
 
+    if df_raw.empty:
+        return pd.DataFrame()
+
     # Profitability Ratios
     df_extract = pd.DataFrame()
 
@@ -145,8 +148,14 @@ def get_fundamentals_prediction(ticker):
         train_fundamentals_model()
         model, feature_cols = joblib.load(f"./machine_learning/models/fundamentals_model.pkl")
 
-    X_test = get_fundamentals(ticker, get_train=False).iloc[[-1]]
-    prob = model.predict_proba(X_test)[0, 1]
-    decision = "BUY" if prob > 0.5 else "DON'T BUY"
+    X_test = get_fundamentals(ticker, get_train=False)
+    
+    if X_test.empty:
+        decision = "UNABLE TO SUPPORT A DECISION"
+        return decision, np.nan
+    else:
+        X_test = X_test.iloc[[-1]]
+        prob = model.predict_proba(X_test)[0, 1]
+        decision = "BUY" if prob > 0.5 else "DON'T BUY"
 
     return decision, prob
