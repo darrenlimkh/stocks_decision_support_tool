@@ -37,16 +37,6 @@ st.sidebar.title("📊 Stock Analyzer")
 with st.sidebar.form(key="analyze_form"):
     ticker = st.text_input("Enter Ticker:", "AAPL").upper()
     valid = is_valid_ticker(ticker) if ticker else False
-        
-    # holding_period = st.number_input(
-    #     "Enter Holding Period (Days):",
-    #     min_value=1,
-    #     max_value=365,
-    #     value=30,
-    #     step=1,
-    #     help="Holding duration in days, which is used to estimate probability of upside."
-    # )
-
     analyze_button = st.form_submit_button(label="Analyze")
 
 color_map = {
