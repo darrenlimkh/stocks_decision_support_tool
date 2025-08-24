@@ -23,8 +23,8 @@ def get_fundamentals(ticker: str):
     # --- PEG ratio ---
     ## Used to assess growth relative to P/E.
     peg = info.get("trailingPegRatio")
-    fundamentals["PEG"] = f"{peg:.2f}"
     if peg is not None:
+        fundamentals["PEG"] = f"{peg:.2f}"
         if peg < 1:
             benchmarks.append("PEG < 1")
             reasons.append("Undervalued")
@@ -36,6 +36,7 @@ def get_fundamentals(ticker: str):
             buy_score.append(-1)
             # valuation_score -= 1
     else:
+        fundamentals["PEG"] = None
         benchmarks.append("-")
         reasons.append("PEG data not available")
         buy_score.append('-')
@@ -44,8 +45,8 @@ def get_fundamentals(ticker: str):
     ## Used to assess valuation relative to earnings.
     industry_pe = sector_benchmarks["P/E"]
     pe = info.get("trailingPE")
-    fundamentals["P/E"] = f"{pe:.2f}"
     if pe is not None:
+        fundamentals["P/E"] = f"{pe:.2f}"
         if pe < industry_pe:
             benchmarks.append(f"P/E < {industry_pe}")
             reasons.append(f"Undervalued")
@@ -57,6 +58,7 @@ def get_fundamentals(ticker: str):
             buy_score.append(-1)
             # valuation_score -= 1
     else:
+        fundamentals["PE"] = None
         benchmarks.append("-")
         reasons.append("P/E data not available")
         buy_score.append('-')
@@ -65,8 +67,9 @@ def get_fundamentals(ticker: str):
     ## Used only when assets drive value. Tech companies with high intangibles may not use P/B.
     if sector != 'Technology':
         pb = info.get("priceToBook")
-        fundamentals["P/B"] = f"{pb:.2f}"
+        
         if pb is not None:
+            fundamentals["P/B"] = f"{pb:.2f}"
             if pb < 1:
                 benchmarks.append("P/B < 1")
                 reasons.append("Undervalued")   
@@ -154,8 +157,8 @@ def get_fundamentals(ticker: str):
     ## Operating margin measures the percentage of revenue left after covering operating expenses.
     industry_op_margin = sector_benchmarks["OperatingMargin"]
     op_margin = info.get("operatingMargins")
-    fundamentals["Operating Margin"] = f"{op_margin:.2f}" 
     if op_margin is not None:
+        fundamentals["Operating Margin"] = f"{op_margin:.2f}" 
         if op_margin > industry_op_margin:
             benchmarks.append(f"Operating Margin > {industry_op_margin}")
             reasons.append("Efficient operations")
@@ -178,8 +181,8 @@ def get_fundamentals(ticker: str):
     ## Revenue growth indicates the company's ability to increase sales over time.
     growth = info.get("revenueGrowth")
     industry_revenue_growth = sector_benchmarks["RevenueGrowth"]
-    fundamentals["Revenue Growth"] = f"{growth:.2f}" 
     if growth is not None:
+        fundamentals["Revenue Growth"] = f"{growth:.2f}" 
         if growth > industry_revenue_growth:
             benchmarks.append(f"Revenue Growth > {industry_revenue_growth}")
             reasons.append("Growing revenue")
@@ -202,8 +205,8 @@ def get_fundamentals(ticker: str):
     ## Dividend payout ratio indicates how much of earnings are paid out as dividends.
     payout = info.get("payoutRatio")
     industry_payout_ratio = sector_benchmarks["PayoutRatio"]
-    fundamentals["Payout Ratio"] = f"{payout:.2f}" 
     if payout is not None:
+        fundamentals["Payout Ratio"] = f"{payout:.2f}" 
         if payout < industry_payout_ratio:
             benchmarks.append(f"Payout Ratio < {industry_payout_ratio}")
             reasons.append("Sustainable dividend")

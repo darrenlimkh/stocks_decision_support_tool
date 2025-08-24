@@ -9,6 +9,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, classification_report
 
+def safe_div(df, num, den):
+    if num in df.columns and den in df.columns:
+        return df[num] / df[den]
+    else:
+        return pd.Series([np.nan] * len(df), index=df.index)
+    
 def get_fundamentals(ticker, get_train, lookahead_days=90):
     t = yf.Ticker(ticker)
     inc = t.quarterly_financials.T
@@ -19,34 +25,42 @@ def get_fundamentals(ticker, get_train, lookahead_days=90):
 
     # Profitability Ratios
     df_extract = pd.DataFrame()
-    df_extract['Gross_Margin'] = df_raw['Gross Profit'] / df_raw['Total Revenue']
-    df_extract['Operating_Margin'] = df_raw['Operating Income'] / df_raw['Total Revenue']
-    df_extract['Net_Margin'] = df_raw['Net Income'] / df_raw['Total Revenue']
-    df_extract['EBITDA_Margin'] = df_raw['EBITDA'] / df_raw['Total Revenue']
+
+    # Profitability Ratios
+    df_extract['Gross_Margin']      = safe_div(df_raw, 'Gross Profit', 'Total Revenue')
+    df_extract['Operating_Margin']  = safe_div(df_raw, 'Operating Income', 'Total Revenue')
+    df_extract['Net_Margin']        = safe_div(df_raw, 'Net Income', 'Total Revenue')
+    df_extract['EBITDA_Margin']     = safe_div(df_raw, 'EBITDA', 'Total Revenue')
 
     # Growth Ratios (YoY)
-    df_extract['Revenue_Growth'] = df_raw['Total Revenue'].pct_change(fill_method=None)
-    df_extract['Net_Income_Growth'] = df_raw['Net Income'].pct_change(fill_method=None)
-    df_extract['EPS_Growth'] = df_raw['Diluted EPS'].pct_change(fill_method=None)
+    df_extract['Revenue_Growth']    = df_raw['Total Revenue'].pct_change(fill_method=None) if 'Total Revenue' in df_raw else np.nan
+    df_extract['Net_Income_Growth'] = df_raw['Net Income'].pct_change(fill_method=None) if 'Net Income' in df_raw else np.nan
+    df_extract['EPS_Growth']        = df_raw['Diluted EPS'].pct_change(fill_method=None) if 'Diluted EPS' in df_raw else np.nan
 
     # Return Ratios
-    df_extract['ROE'] = df_raw['Net Income'] / df_raw['Stockholders Equity']
-    df_extract['ROA'] = df_raw['Net Income'] / df_raw['Total Assets']
-    df_extract['ROIC'] = df_raw['EBIT'] / (df_raw['Total Debt'] + df_raw['Stockholders Equity'] - df_raw['Cash And Cash Equivalents'])
+    df_extract['ROE']   = safe_div(df_raw, 'Net Income', 'Stockholders Equity')
+    df_extract['ROA']   = safe_div(df_raw, 'Net Income', 'Total Assets')
+    df_extract['ROIC']  = safe_div(df_raw, 'EBIT', 'Total Debt') + safe_div(df_raw, 'EBIT', 'Stockholders Equity') - safe_div(df_raw, 'EBIT', 'Cash And Cash Equivalents')
 
     # Leverage Ratios
-    df_extract['Debt_to_Equity'] = df_raw['Total Debt'] / df_raw['Stockholders Equity']
-    df_extract['Net_Debt_to_EBITDA'] = df_raw['Net Debt'] / df_raw['EBITDA']
+    df_extract['Debt_to_Equity']      = safe_div(df_raw, 'Total Debt', 'Stockholders Equity')
+    df_extract['Net_Debt_to_EBITDA']  = safe_div(df_raw, 'Net Debt', 'EBITDA')
 
     # Liquidity Ratios
-    df_extract['Current_Ratio'] = df_raw['Current Assets'] / df_raw['Current Liabilities']
-    df_extract['Quick_Ratio'] = (df_raw['Current Assets'] - df_raw['Inventory']) / df_raw['Current Liabilities']
+    df_extract['Current_Ratio'] = safe_div(df_raw, 'Current Assets', 'Current Liabilities')
+    df_extract['Quick_Ratio']   = safe_div(df_raw, 'Current Assets', 'Current Liabilities') - safe_div(df_raw, 'Inventory', 'Current Liabilities')
 
     # Cash Flow Metrics
-    df_extract['FCF_to_Sales'] = df_raw['Free Cash Flow'] / df_raw['Total Revenue']
-    df_extract['FCF_yield'] = df_raw['Free Cash Flow'] / df_raw['Stockholders Equity']
+    df_extract['FCF_to_Sales']  = safe_div(df_raw, 'Free Cash Flow', 'Total Revenue')
+    df_extract['FCF_yield']     = safe_div(df_raw, 'Free Cash Flow', 'Stockholders Equity')
 
     df_extract['Report_Date'] = df_extract.index
+
+    for col in df_extract.columns:
+        if df_extract[col].isna().all():
+            df_extract[col] = df_extract[col].fillna(0)
+        else:
+            df_extract[col] = df_extract[col].fillna(df_extract[col].mean())
 
     start_date = df_extract['Report_Date'].min()
     end_date = df_extract['Report_Date'].max() + pd.Timedelta(days=lookahead_days+30)
@@ -60,9 +74,7 @@ def get_fundamentals(ticker, get_train, lookahead_days=90):
             lambda x: prices.get(x)
         )
         df_extract = df_extract.dropna()
-
         df_extract['Price_Increase'] = (df_extract['Price_Ahead'] > df_extract['Price_Today']).astype(int)
-
         df_extract = df_extract.drop(columns=['Report_Date', 'Price_Today', 'Price_Ahead'])
     
     else:
@@ -81,7 +93,8 @@ def train_fundamentals_model():
     for ticker in tickers:
         try:
             df_fund = get_fundamentals(ticker, get_train=True, lookahead_days=90)
-            df_train = pd.concat([df_train, df_fund], ignore_index=True)
+            if df_fund:
+                df_train = pd.concat([df_train, df_fund], ignore_index=True)
         except Exception as e:
             pass
             # print(f"Error processing {ticker}: {e}")
